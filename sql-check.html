@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+<head>
+　　<title>SQL检查</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0,minimum-scale=1.0, maximum-scale=1.0,user-scalable=no">
+
+    <script>
+    //判断浏览器是否支持FileReader接口
+    if(typeof FileReader == 'undefined'){
+        result.InnerHTML="<p>你的浏览器不支持FileReader接口！</p>";
+        //使选择控件不可操作
+        file.setAttribute("disabled","disabled");
+    }
+
+    function readSqlContent(fileId, contentId){
+        var file = document.getElementById(fileId).files[0];
+        if (file.name.indexOf(".sql") == -1 && file.name.indexOf(".SQL") == -1) {
+          alert("请选择SQL文件！");
+          return;
+        }
+        var reader = new FileReader();
+        //将文件以文本形式读入页面
+        reader.readAsText(file, "utf8");
+        reader.onload=function(f){
+            var result=document.getElementById(contentId);
+            //显示文件
+            result.innerHTML=this.result;
+            var sql = this.result;
+          setCheckResult(sql, checkSql(sql));
+
+        }
+    }
+
+    function setCheckResult(sql, result) {
+        var begin = getCheckResultBegin(sql);
+        var end = getCheckResultEnd();
+        document.getElementById("sqlCheckResult").innerHTML = begin + result + end;
+    }
+
+    function getCheckResultHeader() {
+      return '<table border="1" width="100%"><tr><td width="20%">检查项</td><td width="10%">检查结果</td><td width="70%">说明</td></tr>';
+    }
+
+    function getCheckResultBegin(sql) {
+      var sqlLines = (sql == "")  ? [] : getLines(sql);
+      var result = "SQL总条数：" + sqlLines.length;
+      return "SQL检查结果如下：" + result + getCheckResultHeader();
+    }
+
+    function getCheckResultEnd() {
+      return '</tr></table>';
+    }
+
+    function checkSql(sql) {
+
+      var sqlLines = getLines(sql);
+
+      sql = sql.toLowerCase(); //使用小写字母
+
+      var isContainDrop = sql.indexOf("drop") === -1;
+      var append = "";
+      append =  append + appendCheckSqlResult("不包含DROP语句", checkContain(sql, "DROP"), "");
+      append =  append + appendCheckSqlResult("不包含TRUNCATE语句", checkContain(sql, "TRUNCATE"), "");
+      append =  append + appendCheckSqlResult("不包含NOT NULL列", checkContain(sql, "NOT NULL COMMENT"), getNotNullLines(sqlLines));
+
+      return append;
+    }
+    function checkContain(sql, words) {
+      return sql.indexOf(words.toLowerCase()) === -1;
+    }
+    function getLines(sql) {
+      return sql.split("\n");
+    }
+
+    function getNotNullLines(sqlLines) {
+      var append = "";
+      for (var i=0; i<sqlLines.length; i++) {
+        if(sqlLines[i].toLowerCase().indexOf("NOT NULL COMMENT".toLowerCase()) !== -1){
+          append = append + sqlLines[i] + "<br/>";
+        }
+      }
+      return append;
+    }
+
+    function appendCheckSqlResult(checkItem, result, description) {
+      return "<tr><td>" + checkItem + " </td><td>" + (result?"通过":"不通过") + "</td><td>" + description + "</td></tr>";
+    }
+
+    </script>
+
+</head>
+<body>
+
+ <script>
+   function readLocalFile () {
+         readSqlContent("uploadFile", "sqlContent");
+    }
+ </script>
+ <div>
+       <div style="text-align:center;">
+          <label>选择SQL文件：</label><input type="file" id="uploadFile" onchange="readLocalFile()"; />
+        </div>
+        <br/>  <br/>
+        <div >
+          <div style="display: inline-block;width:25%;height:600px;">
+            <textarea id="sqlContent" style="width:100%;height:100%;white-space:nowrap;" ></textarea>
+          </div>
+          <div id="sqlCheckResult" style="float: right; margin-right: 1px; display: inline-block;width:70%;height:600px;" ></div>
+        </div>
+    </div>
+
+    <script>
+      setCheckResult("", "");
+    </script>
+</body>
+</html>
